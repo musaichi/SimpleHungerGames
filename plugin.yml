@@ -1,0 +1,9 @@
+name: SimpleHungerGames
+main: SimpleHungerGames\Main
+version: 1.2
+api: [1.10.0]
+
+load: POSTWORLD
+author: luca28pet
+description: Add HungerGames minigame
+website: https://github.com/luca28pet/SimpleHungerGames
