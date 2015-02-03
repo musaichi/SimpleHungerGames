@@ -15,6 +15,7 @@ use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\math\Vector3;
+use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\CallbackTask;
 use pocketmine\utils\Config;
@@ -27,6 +28,10 @@ class Main extends PluginBase implements Listener{
     private $totalminutes;
     private $minute;
     private $spawns = 0;
+    private $points;
+
+    const DEV = "luca28pet";
+    const VER = "1.0beta";
 
     public function onEnable(){
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
@@ -65,6 +70,8 @@ class Main extends PluginBase implements Listener{
         );
         $this->prefs->save();
 
+        $this->points = new Config($this->getDataFolder()."points.yml", Config::YAML);
+
         $this->totalminutes = $this->prefs->get("waiting_time") + $this->prefs->get("game_time") + $this->prefs->get("deathmatch_time");
         $this->minute = $this->prefs->get("waiting_time") + $this->prefs->get("game_time") + $this->prefs->get("deathmatch_time");
 
@@ -84,12 +91,12 @@ class Main extends PluginBase implements Listener{
 
     public function onDisable(){
         $this->prefs->save();
+        $this->points->save();
     }
 
     public function onPreLogin(PlayerPreLoginEvent $event){
         if($this->ingame == true){
             $event->getPlayer()->close("Match running.");
-        }
     }
 
     public function onJoin(PlayerJoinEvent $event){
@@ -97,6 +104,9 @@ class Main extends PluginBase implements Listener{
         $event->getPlayer()->teleport($spawn);
         $this->players = $this->players + 1;
         $event->setJoinMessage("[HG] ".$event->getPlayer()->getName()." joined the match!");
+        if(!$this->points->exists($event->getPlayer()->getName())){
+            $this->points->set($event->getPlayer()->getName(), array("kills" => 0, "deaths" => 0));
+        }
     }
 
     public function onQuit(PlayerQuitEvent $event){
@@ -110,6 +120,13 @@ class Main extends PluginBase implements Listener{
 
     public function onDeath(PlayerDeathEvent $event){
         $this->players = $this->players - 1;
+        $d = $this->points->get($event->getEntity()->getName());
+        $d["deaths"] = $d["deaths"] + 1;
+        $killer = $event->getEntity()->getLastDamageCause()->getCause()->getDamager();
+        if($killer instanceof Player){
+            $k = $this->points->get($killer->getName());
+            $k["kills"] = $k["kills"] + 1;
+        }
         $event->getEntity()->kick("Death");
         $event->setDeathMessage("[HG] ".$event->getEntity()->getName()." died!\nThere are ".$this->players." left.");
         if($this->players <= 1){
