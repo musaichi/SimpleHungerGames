@@ -7,10 +7,11 @@
  */
 namespace SimpleHungerGames;
 
+use pocketmine\block\Chest;
+use pocketmine\entity\Item;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerKickEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\math\Vector3;
@@ -29,6 +30,7 @@ class Main extends PluginBase implements Listener{
 
     public function onEnable(){
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
+        @mkdir($this->getDataFolder());
         $this->prefs = new Config($this->getDataFolder()."prferences.yml", Config::YAML, array
             (
                 "world" => "worldname",
@@ -54,13 +56,30 @@ class Main extends PluginBase implements Listener{
                 "minplayers" => 4,
                 "waiting_time" => 5,
                 "game_time" => 7,
-                "deathmatch_time" => 3
+                "deathmatch_time" => 3,
+                "chest_items" => array(
+                    array(252, 0, 1),
+                    array(222, 0, 1)
+                )
             )
         );
         $this->prefs->save();
+
         $this->totalminutes = $this->prefs->get("waiting_time") + $this->prefs->get("game_time") + $this->prefs->get("deathmatch_time");
         $this->minute = $this->prefs->get("waiting_time") + $this->prefs->get("game_time") + $this->prefs->get("deathmatch_time");
-        $this->getServer()->getScheduler()->scheduleRepeatingTask(new CallbackTask([$this, "schedule"]), 1200); //1*20*60
+
+        $this->getServer()->getScheduler()->scheduleRepeatingTask(new CallbackTask([$this, "schedule"]), 1200); //1200 = 1 tick * 20 ticks per second * 60 seconds
+
+        $this->getServer()->setDefaultLevel($this->getServer()->getLevelByName($this->prefs->get("world")));
+
+        foreach($this->getServer()->getLevelByName($this->prefs->get("world"))->getTiles() as $t){
+            if($t instanceof Chest){
+                $t->getRealInventory()->clearAll();
+                foreach($this->prefs->get("chest_items") as $i){
+                    $t->getRealInventory()->addItem($i[0], $i[1], $i[2]);
+                }
+            }
+        }
     }
 
     public function onDisable(){
@@ -111,11 +130,19 @@ class Main extends PluginBase implements Listener{
             $this->getServer()->broadcastMessage("[HG] DeathMatch starts in ".$timetodm." minutes.")
         }elseif($this->minute == ($this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time"))){
             $this->getServer()->broadcastMessage("[HG] DeathMatch starts NOW!");
-            $this->getServer()->broadcastMessage("[HG] You will be teleported to spawn!");
+            $this->getServer()->broadcastMessage("[HG] Chest has been refilled!");
             foreach($this->getServer()->getOnlinePlayers() as $p){
                 $this->spawns = 0;
                 $spawn = $this->getNextSpawn();
                 $p->teleport($spawn);
+            }
+            foreach($this->getServer()->getLevelByName($this->prefs->get("world"))->getTiles() as $t){
+                if($t instanceof Chest){
+                    foreach($this->prefs->get('chest_items') as $i){
+                        $t->getRealInventory()->clearAll();
+                        $t->getRealInventory()->addItem(new Item($i[0], $i[1], $i[2]));
+                    }
+                }
             }
         }elseif($this->minute < ($this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time")) and $this->minute > 0){
             $timeleft = $this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time") - $this->prefs->get("deathmatch_time") + $this->minute;
