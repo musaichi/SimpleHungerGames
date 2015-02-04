@@ -10,11 +10,6 @@ namespace SimpleHungerGames;
 use pocketmine\block\Chest;
 use pocketmine\entity\Item;
 use pocketmine\event\Listener;
-use pocketmine\event\player\PlayerChatEvent;
-use pocketmine\event\player\PlayerDeathEvent;
-use pocketmine\event\player\PlayerJoinEvent;
-use pocketmine\event\player\PlayerPreLoginEvent;
-use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\math\Vector3;
 use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
@@ -35,7 +30,7 @@ class Main extends PluginBase implements Listener{
     const VER = "1.0beta";
 
     public function onEnable(){
-        $this->getServer()->getPluginManager()->registerEvents($this, $this);
+        $this->getServer()->getPluginManager()->registerEvents(new EventHandler($this), $this);
         @mkdir($this->getDataFolder());
         $this->prefs = new Config($this->getDataFolder()."prferences.yml", Config::YAML, array
             (
@@ -89,54 +84,6 @@ class Main extends PluginBase implements Listener{
         $this->points->save();
     }
 
-    public function onPreLogin(PlayerPreLoginEvent $event){
-        if($this->ingame == true) {
-            $event->getPlayer()->close("Match running.");
-        }
-    }
-
-    public function onJoin(PlayerJoinEvent $event){
-        $spawn = $this->getNextSpawn();
-        $event->getPlayer()->teleport($spawn);
-        $this->players = $this->players + 1;
-        $event->setJoinMessage("[HG] ".$event->getPlayer()->getName()." joined the match!");
-        if(!$this->points->exists($event->getPlayer()->getName())){
-            $this->points->set($event->getPlayer()->getName(), array("kills" => 0, "deaths" => 0));
-        }
-    }
-
-    public function onQuit(PlayerQuitEvent $event){
-        $this->players = $this->players - 1;
-        $event->setQuitMessage("[HG] ".$event->getPlayer()->getName()." left the match!");
-        if($this->players <= 1){
-            $this->getServer()->broadcastMessage("[HG] Game ended!");
-            $this->getServer()->shutdown();
-        }
-    }
-
-    public function onDeath(PlayerDeathEvent $event){
-        $this->players = $this->players - 1;
-        $d = $this->points->get($event->getEntity()->getName());
-        $d["deaths"] = $d["deaths"] + 1;
-        $killer = $event->getEntity()->getLastDamageCause()->getCause()->getDamager();
-        if($killer instanceof Player){
-            $k = $this->points->get($killer->getName());
-            $k["kills"] = $k["kills"] + 1;
-        }
-        $event->getEntity()->kick("Death");
-        $event->setDeathMessage("[HG] ".$event->getEntity()->getName()." died!\nThere are ".$this->players." left.");
-        if($this->players <= 1){
-            $this->getServer()->broadcastMessage("[HG] Game ended!");
-            $this->getServer()->shutdown();
-        }
-    }
-
-    public function onChat(PlayerChatEvent $event){
-        if($this->prefs->get("chat_format") == true){
-            $event->setFormat("[k:".$this->points->get($event->getPlayer()->getName())["kills"]."] [d:".$this->points->get($event->getPlayer()->getName())["deaths"]."] ".$event->getPlayer()->getName().": ".$event->getMessage());
-        }
-    }
-
     private function schedule(){
         $this->minute--;
         if($this->minute <= $this->totalminutes and $this->minute > ($this->totalminutes - $this->prefs->get("waiting_time"))) {
@@ -170,7 +117,7 @@ class Main extends PluginBase implements Listener{
         }
     }
 
-    private function getNextSpawn(){
+    public function getNextSpawn(){
         $this->spawns = $this->spawns + 1;
         $x = $this->prefs->get('spawn_locs')[$this->spawns][0];
         $y = $this->prefs->get('spawn_locs')[$this->spawns][1];
@@ -179,7 +126,7 @@ class Main extends PluginBase implements Listener{
         return $spawn;
     }
 
-    private function refillChests(){
+    public function refillChests(){
         foreach($this->getServer()->getLevelByName($this->prefs->get("world"))->getTiles() as $t){
             if($t instanceof Chest){
                 foreach($this->prefs->get('chest_items') as $i){
