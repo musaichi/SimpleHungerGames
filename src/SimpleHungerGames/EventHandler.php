@@ -43,7 +43,7 @@ class EventHandler implements Listener{
     }
 
     public function onQuit(PlayerQuitEvent $event){
-        $this->players = $this->plugin->players - 1;
+        $this->plugin->players = $this->plugin->players - 1;
         $event->setQuitMessage("[HG] ".$event->getPlayer()->getName()." left the match!");
         if($this->plugin->players <= 1){
             $this->plugin->getServer()->broadcastMessage("[HG] Game ended!");
@@ -52,7 +52,7 @@ class EventHandler implements Listener{
     }
 
     public function onDeath(PlayerDeathEvent $event){
-        $this->players = $this->plugin->players - 1;
+        $this->plugin->players = $this->plugin->players - 1;
         $d = $this->plugin->points->get($event->getEntity()->getName());
         $d["deaths"] = $d["deaths"] + 1;
         $killer = $event->getEntity()->getLastDamageCause()->getCause()->getDamager();
@@ -75,10 +75,10 @@ class EventHandler implements Listener{
     }
 
     public function onBlockPlace(BlockPlaceEvent $event){
-        $event->setCancelled();
+        if(!$event->getPlayer()->isOp()) $event->setCancelled();
     }
 
     public function onBlockBreak(BlockBreakEvent $event){
-        $event->setCancelled();
+        if(!$event->getPlayer()->isOp()) $event->setCancelled();
     }
 }
