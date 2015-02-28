@@ -1,16 +1,8 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Luca Petrucci
- * Date: 04/02/2015
- * Time: 20:01
- */
 
 namespace SimpleHungerGames;
 
-use pocketmine\Server;
 use pocketmine\Player;
-
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\event\player\PlayerDeathEvent;
@@ -22,7 +14,7 @@ use pocketmine\event\block\BlockPlaceEvent;
 
 class EventHandler implements Listener{
 
-    public function __construct($plugin){
+    public function __construct(Main $plugin){
         $this->plugin = $plugin;
     }
 

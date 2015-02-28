@@ -1,30 +1,25 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Luca Petrucci
- * Date: 03/02/2015
- * Time: 19:06
- */
+
 namespace SimpleHungerGames;
 
-use pocketmine\block\Chest;
+use pocketmine\tile\Chest;
 use pocketmine\entity\Item;
-use pocketmine\event\Listener;
 use pocketmine\math\Vector3;
-use pocketmine\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\CallbackTask;
 use pocketmine\utils\Config;
 
-class Main extends PluginBase implements Listener{
+class Main extends PluginBase{
 
-    private $prefs;
-    private $ingame = false;
-    private $players = 0;
-    private $totalminutes;
-    private $minute;
-    private $spawns = 0;
-    private $points;
+    /**@var Config*/
+    public $prefs;
+    public $ingame = false;
+    public $players = 0;
+    public $totalminutes;
+    public $minute;
+    public $spawns = 0;
+    /**@var Config*/
+    public $points;
 
     const DEV = "luca28pet";
     const VER = "1.0beta";
@@ -98,7 +93,7 @@ class Main extends PluginBase implements Listener{
             }
         }elseif($this->minute < ($this->totalminutes - $this->prefs->get("waiting_time")) and $this->minute > ($this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time"))){
             $timetodm = $this->totalminutes - $this->minute + $this->prefs->get('deathmatch_time');
-            $this->getServer()->broadcastMessage("[HG] DeathMatch starts in ".$timetodm." minutes.")
+            $this->getServer()->broadcastMessage("[HG] DeathMatch starts in ".$timetodm." minutes.");
         }elseif($this->minute == ($this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time"))){
             $this->getServer()->broadcastMessage("[HG] DeathMatch starts NOW!");
             $this->getServer()->broadcastMessage("[HG] Chest has been refilled!");
@@ -118,7 +113,7 @@ class Main extends PluginBase implements Listener{
     }
 
     public function getNextSpawn(){
-        $this->spawns = $this->spawns + 1;
+        $this->spawns++;
         $x = $this->prefs->get('spawn_locs')[$this->spawns][0];
         $y = $this->prefs->get('spawn_locs')[$this->spawns][1];
         $z = $this->prefs->get('spawn_locs')[$this->spawns][2];
@@ -129,9 +124,14 @@ class Main extends PluginBase implements Listener{
     public function refillChests(){
         foreach($this->getServer()->getLevelByName($this->prefs->get("world"))->getTiles() as $t){
             if($t instanceof Chest){
+                if($t->isPaired()){
+                    $inv = $t->getInventory();
+                }else{
+                    $inv = $t->getRealInventory();
+                }
+                $inv->clearAll();
                 foreach($this->prefs->get('chest_items') as $i){
-                    $t->getRealInventory()->clearAll();
-                    $t->getRealInventory()->addItem(new Item($i[0], $i[1], $i[2]));
+                    $inv->addItem(new Item($i[0], $i[1], $i[2]));
                 }
             }
         }
