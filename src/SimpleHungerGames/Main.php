@@ -3,7 +3,7 @@
 namespace SimpleHungerGames;
 
 use pocketmine\tile\Chest;
-use pocketmine\entity\Item;
+use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\plugin\PluginBase;
 use pocketmine\scheduler\CallbackTask;
@@ -79,7 +79,7 @@ class Main extends PluginBase{
         $this->points->save();
     }
 
-    private function schedule(){
+    public function schedule(){
         $this->minute--;
         if($this->minute <= $this->totalminutes and $this->minute > ($this->totalminutes - $this->prefs->get("waiting_time"))) {
             $this->getServer()->broadcastMessage("[HG] Match will start in " . $this->totalminutes - $this->minute);
@@ -97,10 +97,9 @@ class Main extends PluginBase{
         }elseif($this->minute == ($this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time"))){
             $this->getServer()->broadcastMessage("[HG] DeathMatch starts NOW!");
             $this->getServer()->broadcastMessage("[HG] Chest has been refilled!");
+            $this->spawns = 0;
             foreach($this->getServer()->getOnlinePlayers() as $p){
-                $this->spawns = 0;
-                $spawn = $this->getNextSpawn();
-                $p->teleport($spawn);
+                $p->teleport($this->getNextSpawn());
             }
             $this->refillChests();
         }elseif($this->minute < ($this->totalminutes - $this->prefs->get("waiting_time") - $this->prefs->get("game_time")) and $this->minute > 0){
@@ -117,8 +116,7 @@ class Main extends PluginBase{
         $x = $this->prefs->get('spawn_locs')[$this->spawns][0];
         $y = $this->prefs->get('spawn_locs')[$this->spawns][1];
         $z = $this->prefs->get('spawn_locs')[$this->spawns][2];
-        $spawn = new Vector3($x, $y, $z);
-        return $spawn;
+        return (new Vector3($x, $y, $z));
     }
 
     public function refillChests(){
@@ -131,7 +129,7 @@ class Main extends PluginBase{
                 }
                 $inv->clearAll();
                 foreach($this->prefs->get('chest_items') as $i){
-                    $inv->addItem(new Item($i[0], $i[1], $i[2]));
+                    $inv->addItem(Item::get($i[0], $i[1], $i[2]));
                 }
             }
         }
