@@ -9,6 +9,7 @@ use pocketmine\event\player\PlayerDeathEvent;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerPreLoginEvent;
 use pocketmine\event\player\PlayerQuitEvent;
+use pocketmine\event\player\PlayerMoveEvent;
 use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\block\BlockPlaceEvent;
 
@@ -57,6 +58,12 @@ class EventHandler implements Listener{
         if($this->plugin->players <= 1){
             $this->plugin->getServer()->broadcastMessage("[HG] Game ended!");
             $this->plugin->getServer()->shutdown();
+        }
+    }
+
+    public function onMove(PlayerMoveEvent $e){
+        if($this->plugin->ingame == false){
+            $e->setCancelled(true);
         }
     }
 
